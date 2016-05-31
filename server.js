@@ -41,7 +41,7 @@ app.get('/data/:objType', function (req, res) {
 app.get('/data/:objType/:id', function (req, res) {
 	cl("GET for single " + req.params.objType);
 	const objs = getObjList(req.params.objType);
-	const index = findIndexForId(objs, req.params.id);
+	const index = utils.findIndexForId(objs, req.params.id);
 	res.json(objs[index]);
 });
 
@@ -50,7 +50,7 @@ app.put('/data/:objType/:id', function (req, res) {
 	const objs = getObjList(req.params.objType);
 	const obj = req.body;
 	obj.id = parseInt(req.params.id);
-	const success = updateObj(objs, obj);
+	const success = utils.updateObj(objs, obj);
 	if (success) res.json(obj);
 	else res.json(404, {error: 'not found'})
 });
@@ -59,14 +59,15 @@ app.post('/data/:objType', function (req, res) {
 	cl("POST for " + req.params.objType);
 	const objs = getObjList(req.params.objType);
 	const obj = req.body;
-	obj.id = findNextId(objs);
-	addObj(objs, obj);
+	cl(obj);
+	obj.id = utils.findNextId(objs);
+	utils.addObj(objs, obj);
 	res.json(obj);
 });
 
 app.delete('/data/:objType/:id', function (req, res) {
 	const objs = getObjList(req.params.objType);
-	deleteObj(objs, req.params.id);
+	utils.deleteObj(objs, req.params.id);
 	res.json({});
 });
 

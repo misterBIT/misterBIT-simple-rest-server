@@ -33,6 +33,17 @@ PUT localhost:3003/data/user/<id> -----> replaces a single user by its ID in the
 DELETE localhost:3003/data/user/<id> -----> deletes a single user by its ID off the list of users
 
 
+## Use with Anuglar 2 - notice students of angular workshop
+
+make sure your user service issues the POST request with the right content-type header (json), else the user data will not be added to the store
+eg: (from my saveUser function)
+```
+...
+return this.http.post(url, JSON.stringify(user), {headers: new Headers({'content-type':'application/json'})});
+```
+
+Headers is an exported class in the @angular/http package
+
 ## Demos
 
 the server comes with cars,pets and monsters collections
