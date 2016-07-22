@@ -2,9 +2,8 @@
 // Author: Yaron Biton misterBIT.co.il
 
 "use strict";
-const express = require('express'),
-	cors = require('cors'),
-	utils = require('./lib/utils.js');
+const 	express 	= require('express'),
+		cors 		= require('cors');
 
 
 // Main Cache object, entities are lazily loaded and saved here for in memory CRUD
@@ -25,53 +24,85 @@ const app = express();
 app.use(cors());
 app.use(express.bodyParser());
 
-
-app.all('/', function (req, res, next) {
-	res.header("Access-Control-Allow-Origin", "*");
-	res.header("Access-Control-Allow-Headers", "X-Requested-With");
-	next();
-});
-
+// GETs a list
 app.get('/data/:objType', function (req, res) {
 	const objs = getObjList(req.params.objType);
 	cl("Returning list of " + objs.length + " " + req.params.objType + "s");
 	res.json(objs);
 });
 
+// GETs a single
 app.get('/data/:objType/:id', function (req, res) {
 	cl("GET for single " + req.params.objType);
 	const objs = getObjList(req.params.objType);
-	const index = utils.findIndexForId(objs, req.params.id);
-	res.json(objs[index]);
-});
-
-app.put('/data/:objType/:id', function (req, res) {
-	cl("PUT for " + req.params.objType);
-	const objs = getObjList(req.params.objType);
-	const obj = req.body;
-	obj.id = parseInt(req.params.id);
-	const success = utils.updateObj(objs, obj);
-	if (success) res.json(obj);
-	else res.json(404, {error: 'not found'})
-});
-
-app.post('/data/:objType', function (req, res) {
-	cl("POST for " + req.params.objType);
-	const objs = getObjList(req.params.objType);
-	const obj = req.body;
-	cl(obj);
-	obj.id = utils.findNextId(objs);
-	utils.addObj(objs, obj);
+	const obj = objs.filter(obj => obj.id === +req.params.id)[0];
 	res.json(obj);
 });
 
+// DELETE
 app.delete('/data/:objType/:id', function (req, res) {
 	const objs = getObjList(req.params.objType);
-	utils.deleteObj(objs, req.params.id);
+	let idx = findIndexForId(objs, +req.params.id);
+	if (idx !== -1) {
+		objs.splice(idx, 1);	
+	}
 	res.json({});
 });
 
-app.listen(3003, function () {
-	console.log("misterREST server is ready at http://localhost:3003");
+// POST - adds 
+app.post('/data/:objType', function (req, res) {
+	cl("POST for " + req.params.objType);
+	const objs = getObjList(req.params.objType);
+	let obj = req.body;
+	obj.id = findNextId(objs);
+	objs.push(obj);
+	res.json(obj);
 });
 
+// PUT - updates
+app.put('/data/:objType/:id', function (req, res) {
+	cl("PUT for " + req.params.objType);
+	const objs = getObjList(req.params.objType);
+	const newObj = req.body;
+	let success = false;
+	let idx = findIndexForId(objs, +req.params.id);
+	if (idx !== -1) {
+		objs[idx] = newObj;
+		success = true;
+	}
+	if (success) res.json(newObj);
+	else res.json(404, {error: 'not found'})
+});
+
+
+// Kickup our server 
+const baseUrl = 'http://localhost:3003/data';
+app.listen(3003, function () {
+	console.log(`misterREST server is ready at ${baseUrl}`);
+	console.log(`GET (list): \t\t ${baseUrl}/{entity}`);
+	console.log(`GET (single): \t\t ${baseUrl}/{entity}/{id}`);
+	console.log(`DELETE: \t\t ${baseUrl}/{entity}/{id}`);
+	console.log(`PUT (update): \t\t ${baseUrl}/{entity}/{id}`);
+	console.log(`POST (add): \t\t ${baseUrl}/{entity}`);
+
+});
+
+
+// Some small time utility functions
+function cl(...params) {
+	console.log.apply(console, params);
+}
+function findIndexForId(objs, id) {
+	for (var i = 0; i < objs.length; i++) {
+		if (objs[i].id == id) return i;
+	}
+	return -1;
+}
+
+function findNextId(objs) {
+	var nextId = 0;
+	for (var i = 0; i < objs.length; i++) {
+		if (objs[i].id > nextId) nextId = objs[i].id;
+	}
+	return nextId + 1;
+}
