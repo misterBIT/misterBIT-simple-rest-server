@@ -1,12 +1,12 @@
-// Minimal Simple REST API Handler (With MongoDB and Socket.io)
+// Minimal Simple REST API Handler (With MongoDB)
 // Author: Yaron Biton misterBIT.co.il
 
 "use strict";
-const 	express = require('express'),
+const 	express 		= require('express'),
 		bodyParser 		= require('body-parser'),
-		cors = require('cors'),
-		mongodb = require('mongodb')
-	
+		cors 			= require('cors'),
+		mongodb 		= require('mongodb')
+
 function dbConnect() {
 
 	return new Promise((resolve, reject) => {
@@ -19,33 +19,17 @@ function dbConnect() {
 				reject(err);
 			}
 			else {
-				//cl("Connected to DB");
+				cl("Connected to DB");
 				resolve(db);
 			}
 		});
 	});
 }
 
-// var corsOptions = {
-//   origins: 'http://localhost:8080',
-//   credentials: false
-// };
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
-
-const http 	= require('http').Server(app);
-const io 	= require('socket.io')(http);
-io.on('connection', function(socket){
-  console.log('a user connected');
-});
-cl('Socket is open');
-
-// Just for basic testing the socket
-// app.get('/', function(req, res){
-//   res.sendFile(__dirname + '/test-socket.html');
-// });
 
 // GETs a list
 app.get('/data/:objType', function (req, res) {
@@ -162,9 +146,7 @@ app.put('/data/:objType/:id', function (req, res) {
 
 // Kickup our server 
 const baseUrl = 'http://localhost:3003/data';
-// Note: app.listen will not work with cors and the socket
-// app.listen(3003, function () {
-http.listen(3003, function () {
+app.listen(3003, function () {
 	console.log(`misterREST server is ready at ${baseUrl}`);
 	console.log(`GET (list): \t\t ${baseUrl}/{entity}`);
 	console.log(`GET (single): \t\t ${baseUrl}/{entity}/{id}`);

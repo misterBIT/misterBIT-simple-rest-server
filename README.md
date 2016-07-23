@@ -32,6 +32,15 @@ PUT localhost:3003/data/user/<id> -----> replaces a single user by its ID in the
 
 DELETE localhost:3003/data/user/<id> -----> deletes a single user by its ID off the list of users
 
+3 Versions of the server:
+
+1.  in-memory, based on files
+
+2.  MongoDB
+
+3.  Configured with Socket.io
+
+
 
 ## Use with Anuglar 2 - notice students of angular workshop
 
