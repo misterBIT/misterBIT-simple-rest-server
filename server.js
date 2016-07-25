@@ -45,8 +45,17 @@ function dbConnect() {
 
 io.on('connection', function(socket){
   console.log('a user connected');
+  socket.on('disconnect', function(){
+    console.log('user disconnected');
+  });
+  socket.on('chat message', function(msg){
+      // console.log('message: ' + msg);
+      io.emit('chat message', msg);
+  });  
+    
 });
-cl('Socket is open');
+
+cl('WebSocket is Ready');
 
 // Just for basic testing the socket
 // app.get('/', function(req, res){
