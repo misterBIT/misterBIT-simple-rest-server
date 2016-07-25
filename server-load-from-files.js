@@ -10,7 +10,7 @@ const 	express 		= require('express'),
 // Main Cache object, entities are lazily loaded and saved here for in memory CRUD
 const cache = {};
 function getObjList(objType) {
-	if (!/^[a-zA-Z0-9]*$/g.test(objType)) {
+	if (!/^[a-zA-Z0-9]+$/g.test(objType)) {
 		cl('Invalid Entitiy name');
 		return [];
 	}

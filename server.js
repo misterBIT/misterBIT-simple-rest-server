@@ -6,7 +6,18 @@ const 	express = require('express'),
 		bodyParser 		= require('body-parser'),
 		cors = require('cors'),
 		mongodb = require('mongodb')
+
+const multer  = require('multer')
+const upload = multer({ dest: 'uploads/' })
 	
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
+
+const http 	= require('http').Server(app);
+const io 	= require('socket.io')(http);
+
+
 function dbConnect() {
 
 	return new Promise((resolve, reject) => {
@@ -31,12 +42,7 @@ function dbConnect() {
 //   credentials: false
 // };
 
-const app = express();
-app.use(cors());
-app.use(bodyParser.json());
 
-const http 	= require('http').Server(app);
-const io 	= require('socket.io')(http);
 io.on('connection', function(socket){
   console.log('a user connected');
 });
@@ -46,6 +52,16 @@ cl('Socket is open');
 // app.get('/', function(req, res){
 //   res.sendFile(__dirname + '/test-socket.html');
 // });
+
+
+app.post('/profile', upload.single('avatar'), function (req, res, next) {
+  console.log('req.file', req.file);
+  console.log('req.body', req.body);
+    
+  // req.file is the `avatar` file
+  // req.body will hold the text fields, if there were any
+})
+
 
 // GETs a list
 app.get('/data/:objType', function (req, res) {
@@ -74,13 +90,13 @@ app.get('/data/:objType/:id', function (req, res) {
 	dbConnect().then((db) => {
 		const collection = db.collection(objType);
 
-		collection.findOne({_id: new mongodb.ObjectID(objId)}, (err, objs) => {
+		collection.findOne({_id: new mongodb.ObjectID(objId)}, (err, obj) => {
 			if (err) {
 				cl('Cannot get you that ', err)
 				res.json(404, { error: 'not found' })
 			} else {
 				cl("Returning a single"+ objType);
-				res.json(objs);
+				res.json(obj);
 			}
 			db.close();
 		});
