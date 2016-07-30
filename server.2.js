@@ -1,29 +1,21 @@
 // Minimal Simple REST API Handler (With MongoDB and Socket.io)
-// Plus support for simple login and session
-// Plus support for file upload
 // Author: Yaron Biton misterBIT.co.il
+
+//This version has a solution for naming the file by the entity id, but:
+// *. how do we know if jpeg / png / etc...
+// *. missing checks for when there is no uploaded file, server will fly
+
 
 "use strict";
 const 	express = require('express'),
 		bodyParser 		= require('body-parser'),
+		fs 		        = require('fs'),
 		cors = require('cors'),
 		mongodb = require('mongodb')
 
-const clientSessions = require("client-sessions");
 const multer  = require('multer')
 
-// Configure where uploaded files are going
-const uploadFolder = '/uploads';
-var storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, __dirname + uploadFolder);
-  },
-  filename: function (req, file, cb) {
-        const ext = file.originalname.substr(file.originalname.lastIndexOf('.'));
-        cb(null, file.fieldname + '-' + Date.now() + ext)
-  }
-})
-var upload = multer({ storage: storage })
+const upload = multer({ dest: 'uploads/' })
 	
 const app = express();
 
@@ -35,12 +27,6 @@ var corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(bodyParser.json());
-app.use(clientSessions({
-  cookieName: 'session',
-  secret: 'C0d1ng 1s fun 1f y0u kn0w h0w', // set this to a long random string!
-  duration: 30 * 60 * 1000,
-  activeDuration: 5 * 60 * 1000,
-}));
 
 const http 	= require('http').Server(app);
 const io 	= require('socket.io')(http);
@@ -64,6 +50,37 @@ function dbConnect() {
 		});
 	});
 }
+
+io.on('connection', function(socket){
+  console.log('a user connected');
+  socket.on('disconnect', function(){
+    console.log('user disconnected');
+  });
+  socket.on('chat message', function(msg){
+      // console.log('message: ' + msg);
+      io.emit('chat message', msg);
+  });  
+    
+});
+
+cl('WebSocket is Ready');
+
+// Just for basic testing the socket
+// app.get('/', function(req, res){
+//   res.sendFile(__dirname + '/test-socket.html');
+// });
+
+
+app.post('/profile', upload.single('file'), function (req, res, next) {
+  console.log('req.file', req.file);
+  console.log('req.body', req.body);
+
+  res.end('Goote');
+    
+  // req.file is the `avatar` file
+  // req.body will hold the text fields, if there were any
+})
+
 
 // GETs a list
 app.get('/data/:objType', function (req, res) {
@@ -131,17 +148,16 @@ app.delete('/data/:objType/:id', function (req, res) {
 
 // POST - adds 
 app.post('/data/:objType', upload.single('file'), function (req, res) {
-    //console.log('req.file', req.file);
+
+    // console.log('req.file', req.file);
     // console.log('req.body', req.body);
    
 	const objType = req.params.objType;
-    cl("POST for " + objType);
-
 	const obj = req.body;
-    // If there is a file upload, add the url to the obj
-    if (req.file) {
-        obj.imgUrl = uploadFolder + '/' + req.file.filename;
-    }
+
+
+    
+	cl("POST for " + objType);
 
 	dbConnect().then((db) => {
 		const collection = db.collection(objType);
@@ -152,8 +168,18 @@ app.post('/data/:objType', upload.single('file'), function (req, res) {
 				res.json(500, { error: 'Failed to add' })
 			} else {
 				cl(objType + " added");
-                res.json(obj);
-                db.close();
+
+                // Get the newly born ID 
+                const objId = result.insertedIds[0].toString();
+                // Figure out the extension for the image file
+                const ext = req.file.originalname.substr(req.file.originalname.lastIndexOf('.'));
+                    // rename the image so it has the id of the object
+                    const destFile = __dirname + '/uploads/' + objId + ext;
+                    fs.rename(req.file.path, destFile, (err) => {
+                        if (err)    throw err;
+                        res.json(obj);
+                        db.close();
+                    });
 			}
 		});
 	});
@@ -179,40 +205,9 @@ app.put('/data/:objType/:id', function (req, res) {
 			}
 			db.close();
 		});
+
 	});
-});
 
-// Basic Login/Logout/Protected assets
-app.post('/login', function (req, res) {
-    dbConnect().then((db) => {
-        db.collection('user').findOne({ username: req.body.username, pass: req.body.pass }, function (err, user) {
-            if (user) {
-                cl('Login Succesful');
-                req.session.user = user;  //refresh the session value
-                res.end('Login Succesful');
-            } else {
-                cl('Login NOT Succesful');
-                req.session.user = null;
-                res.end('Login NOT Succesful');
-            }
-        });
-    });
-});
-
-app.get('/logout', function (req, res) {
-  req.session.reset();
-  res.end('Loggedout');
-});
-function requireLogin(req, res, next) {
-    if (!req.session.user) {
-        cl('Login Required');
-       res.json(403, { error: 'Please Login' })
-    } else {
-        next();
-    }
-};
-app.get('/protected', requireLogin, function(req, res) {
-  res.end('User is loggedin, return some data');
 });
 
 
@@ -230,26 +225,7 @@ http.listen(3003, function () {
 
 });
 
-
-io.on('connection', function(socket){
-  console.log('a user connected');
-  socket.on('disconnect', function(){
-    console.log('user disconnected');
-  });
-  socket.on('chat message', function(msg){
-      // console.log('message: ' + msg);
-      io.emit('chat message', msg);
-  });  
-});
-
-cl('WebSocket is Ready');
-
 // Some small time utility functions
 function cl(...params) {
 	console.log.apply(console, params);
 }
-
-// Just for basic testing the socket
-// app.get('/', function(req, res){
-//   res.sendFile(__dirname + '/test-socket.html');
-// });

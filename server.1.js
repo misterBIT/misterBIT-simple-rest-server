@@ -1,29 +1,38 @@
 // Minimal Simple REST API Handler (With MongoDB and Socket.io)
-// Plus support for simple login and session
-// Plus support for file upload
+// This is just a step in the way for supporting file upload, 
+// here we first save the document, then upload the file
 // Author: Yaron Biton misterBIT.co.il
 
 "use strict";
 const 	express = require('express'),
 		bodyParser 		= require('body-parser'),
 		cors = require('cors'),
-		mongodb = require('mongodb')
+		mongodb = require('mongodb'),
+        multiparty = require('multiparty'),
+        util = require('util')
 
-const clientSessions = require("client-sessions");
+
 const multer  = require('multer')
 
-// Configure where uploaded files are going
-const uploadFolder = '/uploads';
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, __dirname + uploadFolder);
+    // cl('MULTER DEST', __dirname + '/uploads');  
+    cb(null, __dirname + '/uploads');
   },
   filename: function (req, file, cb) {
-        const ext = file.originalname.substr(file.originalname.lastIndexOf('.'));
-        cb(null, file.fieldname + '-' + Date.now() + ext)
+      cl('req', req);
+    // cb(null, file.fieldname)
+    const ext = file.originalname.substr(file.originalname.lastIndexOf('.'));
+    // const destFile = __dirname + '/uploads/' + req.entityId + ext;
+    const destFile = req.entityId + ext;
+    cl('MULTER is saving file', destFile);
+    cb(null, destFile)
   }
 })
-var upload = multer({ storage: storage })
+ 
+const upload = multer({ storage: storage })
+
+// const upload = multer({ dest: 'uploads/' })
 	
 const app = express();
 
@@ -35,12 +44,6 @@ var corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(bodyParser.json());
-app.use(clientSessions({
-  cookieName: 'session',
-  secret: 'C0d1ng 1s fun 1f y0u kn0w h0w', // set this to a long random string!
-  duration: 30 * 60 * 1000,
-  activeDuration: 5 * 60 * 1000,
-}));
 
 const http 	= require('http').Server(app);
 const io 	= require('socket.io')(http);
@@ -64,6 +67,39 @@ function dbConnect() {
 		});
 	});
 }
+
+
+
+io.on('connection', function(socket){
+  console.log('a user connected');
+  socket.on('disconnect', function(){
+    console.log('user disconnected');
+  });
+  socket.on('chat message', function(msg){
+      // console.log('message: ' + msg);
+      io.emit('chat message', msg);
+  });  
+    
+});
+
+cl('WebSocket is Ready');
+
+// Just for basic testing the socket
+// app.get('/', function(req, res){
+//   res.sendFile(__dirname + '/test-socket.html');
+// });
+
+
+// app.post('/profile', upload.single('file'), function (req, res, next) {
+//   console.log('req.file', req.file);
+//   console.log('req.body', req.body);
+
+//   res.end('Goote');
+    
+//   // req.file is the `avatar` file
+//   // req.body will hold the text fields, if there were any
+// })
+
 
 // GETs a list
 app.get('/data/:objType', function (req, res) {
@@ -130,20 +166,21 @@ app.delete('/data/:objType/:id', function (req, res) {
 });
 
 // POST - adds 
-app.post('/data/:objType', upload.single('file'), function (req, res) {
-    //console.log('req.file', req.file);
+app.post('/data/:objType', function (req, res, next) {
+
+    // console.log('req.file', req.file);
     // console.log('req.body', req.body);
-   
-	const objType = req.params.objType;
+    const objType = req.params.objType;
     cl("POST for " + objType);
 
-	const obj = req.body;
-    // If there is a file upload, add the url to the obj
-    if (req.file) {
-        obj.imgUrl = uploadFolder + '/' + req.file.filename;
-    }
-
-	dbConnect().then((db) => {
+    var form = new multiparty.Form();
+	
+    form.parse(req, function(err, fields, files) {
+       
+        const obj = jsonFromMultipartyFields(fields);
+        // console.log('******* obj', obj);
+        
+        dbConnect().then((db) => {
 		const collection = db.collection(objType);
 
 		collection.insert(obj, (err, result) => {
@@ -152,13 +189,22 @@ app.post('/data/:objType', upload.single('file'), function (req, res) {
 				res.json(500, { error: 'Failed to add' })
 			} else {
 				cl(objType + " added");
-                res.json(obj);
-                db.close();
+
+                cl('MONGO result', result);
+                req.entityId = result.insertedIds[0].toString();
+                req.file = files[0];
+
+				res.json(obj);
 			}
+			db.close();
+            next()
+
 		});
 	});
+    
+    });
 
-});
+}, upload.single('file'));
 
 // PUT - updates
 app.put('/data/:objType/:id', function (req, res) {
@@ -179,40 +225,9 @@ app.put('/data/:objType/:id', function (req, res) {
 			}
 			db.close();
 		});
+
 	});
-});
 
-// Basic Login/Logout/Protected assets
-app.post('/login', function (req, res) {
-    dbConnect().then((db) => {
-        db.collection('user').findOne({ username: req.body.username, pass: req.body.pass }, function (err, user) {
-            if (user) {
-                cl('Login Succesful');
-                req.session.user = user;  //refresh the session value
-                res.end('Login Succesful');
-            } else {
-                cl('Login NOT Succesful');
-                req.session.user = null;
-                res.end('Login NOT Succesful');
-            }
-        });
-    });
-});
-
-app.get('/logout', function (req, res) {
-  req.session.reset();
-  res.end('Loggedout');
-});
-function requireLogin(req, res, next) {
-    if (!req.session.user) {
-        cl('Login Required');
-       res.json(403, { error: 'Please Login' })
-    } else {
-        next();
-    }
-};
-app.get('/protected', requireLogin, function(req, res) {
-  res.end('User is loggedin, return some data');
 });
 
 
@@ -230,26 +245,18 @@ http.listen(3003, function () {
 
 });
 
-
-io.on('connection', function(socket){
-  console.log('a user connected');
-  socket.on('disconnect', function(){
-    console.log('user disconnected');
-  });
-  socket.on('chat message', function(msg){
-      // console.log('message: ' + msg);
-      io.emit('chat message', msg);
-  });  
-});
-
-cl('WebSocket is Ready');
-
 // Some small time utility functions
 function cl(...params) {
 	console.log.apply(console, params);
 }
 
-// Just for basic testing the socket
-// app.get('/', function(req, res){
-//   res.sendFile(__dirname + '/test-socket.html');
-// });
+function jsonFromMultipartyFields(fields) {
+    const obj = {}
+    for (var property in fields) {
+        if (fields.hasOwnProperty(property)) {
+            obj[property] = fields[property][0]
+        }
+    }    
+    //cl('obj is: ', obj);
+    return obj;
+}
