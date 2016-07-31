@@ -33,7 +33,11 @@ var corsOptions = {
   credentials: true
 };
 
+const serverRoot = 'http://localhost:3003/';
+const baseUrl = serverRoot + 'data';
 
+
+app.use(express.static('uploads'));
 app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(clientSessions({
@@ -142,7 +146,7 @@ app.post('/data/:objType', upload.single('file'), function (req, res) {
     delete obj._id;
     // If there is a file upload, add the url to the obj
     if (req.file) {
-        obj.imgUrl = uploadFolder + '/' + req.file.filename;
+        obj.imgUrl = serverRoot + req.file.filename;
     }
 
 	dbConnect().then((db) => {
@@ -222,7 +226,6 @@ app.get('/protected', requireLogin, function(req, res) {
 
 
 // Kickup our server 
-const baseUrl = 'http://localhost:3003/data';
 // Note: app.listen will not work with cors and the socket
 // app.listen(3003, function () {
 http.listen(3003, function () {
