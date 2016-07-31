@@ -138,6 +138,7 @@ app.post('/data/:objType', upload.single('file'), function (req, res) {
     cl("POST for " + objType);
 
 	const obj = req.body;
+    delete obj._id;
     // If there is a file upload, add the url to the obj
     if (req.file) {
         obj.imgUrl = uploadFolder + '/' + req.file.filename;
