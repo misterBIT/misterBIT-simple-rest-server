@@ -19,6 +19,7 @@ var storage = multer.diskStorage({
     cb(null, __dirname + uploadFolder);
   },
   filename: function (req, file, cb) {
+        cl('file', file);
         const ext = file.originalname.substr(file.originalname.lastIndexOf('.'));
         cb(null, file.fieldname + '-' + Date.now() + ext)
   }
@@ -166,7 +167,10 @@ app.put('/data/:objType/:id', function (req, res) {
 	const objType 	= req.params.objType;
 	const objId 	= req.params.id;
 	const newObj 	= req.body;
-	cl(`Requested to UPDATE the ${objType} with id: ${objId}`);
+    // PUT - when _id is there, as string, conertto ObjectId
+    if (newObj._id && typeof newObj._id === 'string') newObj._id = new mongodb.ObjectID(newObj._id);
+	
+    cl(`Requested to UPDATE the ${objType} with id: ${objId}`);
 	dbConnect().then((db) => {
 		const collection = db.collection(objType);
 		collection.updateOne({ _id:  new mongodb.ObjectID(objId)}, newObj,
@@ -175,7 +179,7 @@ app.put('/data/:objType/:id', function (req, res) {
 				cl('Cannot Update', err)
 				res.json(500, { error: 'Update failed' })
 			} else {
-				cl("Updated", result);
+				c//l("Updated", result);
 				res.json(newObj);
 			}
 			db.close();
