@@ -25,8 +25,16 @@ function getObjList(objType) {
 	return cache[objType];
 }
 
+
+var corsOptions = {
+  origin: ['http://localhost:8080','http://localhost:3000'],
+  credentials: true
+};
+
+
+
 const app = express();
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(bodyParser.json());
 
 // GETs a list
