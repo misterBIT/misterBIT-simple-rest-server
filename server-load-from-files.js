@@ -48,7 +48,7 @@ app.get('/data/:objType', function (req, res) {
 app.get('/data/:objType/:id', function (req, res) {
 	cl("GET for single " + req.params.objType);
 	const objs = getObjList(req.params.objType);
-	const obj = objs.filter(obj => obj.id === +req.params.id)[0];
+	const obj = objs.filter(obj => obj._id === +req.params.id)[0];
 	res.json(obj);
 });
 
@@ -67,7 +67,7 @@ app.post('/data/:objType', function (req, res) {
 	cl("POST for " + req.params.objType);
 	const objs = getObjList(req.params.objType);
 	let obj = req.body;
-	obj.id = findNextId(objs);
+	obj._id = findNextId(objs);
 	objs.push(obj);
 	res.json(obj);
 });
@@ -96,7 +96,7 @@ app.listen(3003, function () {
 	console.log(`GET (single): \t\t ${baseUrl}/{entity}/{id}`);
 	console.log(`DELETE: \t\t ${baseUrl}/{entity}/{id}`);
 	console.log(`PUT (update): \t\t ${baseUrl}/{entity}/{id}`);
-	console.log(`POST (add): \t\t ${baseUrl}/{entity}`);
+	console.log(`POST (add): \t\t ${baseUrl}/{entity} - INDEX IS automatically ADDED AT _id`);
 
 });
 
@@ -107,7 +107,7 @@ function cl(...params) {
 }
 function findIndexForId(objs, id) {
 	for (var i = 0; i < objs.length; i++) {
-		if (objs[i].id == id) return i;
+		if (objs[i]._id == id) return i;
 	}
 	return -1;
 }
@@ -115,7 +115,7 @@ function findIndexForId(objs, id) {
 function findNextId(objs) {
 	var nextId = 0;
 	for (var i = 0; i < objs.length; i++) {
-		if (objs[i].id > nextId) nextId = objs[i].id;
+		if (objs[i]._id > nextId) nextId = objs[i]._id;
 	}
 	return nextId + 1;
 }
