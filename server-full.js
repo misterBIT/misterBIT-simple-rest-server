@@ -29,7 +29,7 @@ var upload = multer({storage: storage})
 const app = express();
 
 var corsOptions = {
-  origin: ['http://localhost:8080','http://localhost:3000'],
+  origin: /http:\/\/localhost:\d+/,
   credentials: true
 };
 

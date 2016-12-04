@@ -2,9 +2,9 @@
 // Author: Yaron Biton misterBIT.co.il
 
 "use strict";
-const 	express 		= require('express'),
-		bodyParser 		= require('body-parser'),
-		cors 			= require('cors');
+const express = require('express'),
+	bodyParser = require('body-parser'),
+	cors = require('cors');
 
 
 // Main Cache object, entities are lazily loaded and saved here for in memory CRUD
@@ -27,10 +27,9 @@ function getObjList(objType) {
 
 
 var corsOptions = {
-  origin: ['http://localhost:8080','http://localhost:3000'],
-  credentials: true
+	origin: /http:\/\/localhost:\d+/,
+	credentials: true
 };
-
 
 
 const app = express();
@@ -57,7 +56,7 @@ app.delete('/data/:objType/:id', function (req, res) {
 	const objs = getObjList(req.params.objType);
 	let idx = findIndexForId(objs, +req.params.id);
 	if (idx !== -1) {
-		objs.splice(idx, 1);	
+		objs.splice(idx, 1);
 	}
 	res.json({});
 });
