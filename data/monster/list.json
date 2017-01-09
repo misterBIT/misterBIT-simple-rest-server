@@ -1,9 +1,8 @@
 [
     {
-        "id":1,
+        "_id":1,
         "name":"Monsti",
         "power":5,
-        "miles":98167,
         "birthdate" : 1304375948024,
         "enemies":[
             {"name":"Charli", "type":"Cat"},
@@ -12,16 +11,15 @@
         ]
     },
     {
-        "id":2,
+        "_id":2,
         "name":"Putsi",
         "power":5,
-        "miles":1111,
         "birthdate" : 1304375948011,
         "enemies":[
         ]
     },
     {
-        "id":3,
+        "_id":3,
         "name":"Bobo",
         "power":4,
         "miles":1111,

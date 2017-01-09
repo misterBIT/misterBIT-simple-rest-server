@@ -102,19 +102,20 @@ app.get('/data/:objType/:id', function (req, res) {
 				_id = new mongodb.ObjectID(objId);
 			}
 			catch (e) {
+				console.log('ERROR', e);
 				return Promise.reject(e);
 			}
-			return collection.find({_id: _id}).limit(1)
-				.then((obj) => {
-					cl("Returning a single" + objType);
-					res.json(obj);
-				})
-				.catch(err=> {
-					cl('Cannot get you that ', err)
-					res.json(404, {error: 'not found'})
-				}).finally(()=> {
-					db.close();
-				})
+
+			collection.find({_id: _id}).toArray((err, objs) => {
+						if (err) {
+							cl('Cannot get you that ', err)
+							res.json(404, {error: 'not found'})
+						} else {
+							cl("Returning a single " + objType);
+							res.json(objs[0]);
+						}
+						db.close();
+					});
 		});
 });
 
@@ -179,7 +180,7 @@ app.put('/data/:objType/:id',  function (req, res) {
 	const objId 	= req.params.id;
 	const newObj 	= req.body;
     if (newObj._id && typeof newObj._id === 'string') newObj._id = new mongodb.ObjectID(newObj._id);
-	
+
     cl(`Requested to UPDATE the ${objType} with id: ${objId}`);
 	dbConnect().then((db) => {
 		const collection = db.collection(objType);
@@ -203,11 +204,11 @@ app.post('/login', function (req, res) {
 			if (user) {
 				cl('Login Succesful');
 				req.session.user = user;  //refresh the session value
-				res.end('Login Succesful');
+				res.json({token: 'Beareloginr: puk115th@b@5t'});
 			} else {
 				cl('Login NOT Succesful');
 				req.session.user = null;
-				res.end('Login NOT Succesful');
+				res.json(403, { error: 'Login failed' })
 			}
 		});
 	});
@@ -263,6 +264,6 @@ function cl(...params) {
 }
 
 // Just for basic testing the socket
-// app.get('/', function(req, res){
-//   res.sendFile(__dirname + '/test-socket.html');
-// });
+app.get('/', function(req, res){
+  res.sendFile(__dirname + '/test-socket.html');
+});
