@@ -97,14 +97,14 @@ app.get('/data/:objType/:id', function (req, res) {
 	dbConnect()
 		.then((db) => {
 			const collection = db.collection(objType);
-			let _id;
-			try {
-				_id = new mongodb.ObjectID(objId);
-			}
-			catch (e) {
-				console.log('ERROR', e);
-				return Promise.reject(e);
-			}
+			//let _id;
+			//try {
+			let	_id = new mongodb.ObjectID(objId);
+			//}
+			//catch (e) {
+			//	console.log('ERROR', e);
+			//	return Promise.reject(e);
+			//}
 
 			collection.find({_id: _id}).toArray((err, objs) => {
 						if (err) {
@@ -203,8 +203,9 @@ app.post('/login', function (req, res) {
 		db.collection('user').findOne({username: req.body.username, pass: req.body.pass}, function (err, user) {
 			if (user) {
 				cl('Login Succesful');
+                delete user.pass;
 				req.session.user = user;  //refresh the session value
-				res.json({token: 'Beareloginr: puk115th@b@5t'});
+				res.json({token: 'Beareloginr: puk115th@b@5t', user});
 			} else {
 				cl('Login NOT Succesful');
 				req.session.user = null;
@@ -218,6 +219,7 @@ app.get('/logout', function (req, res) {
 	req.session.reset();
 	res.end('Loggedout');
 });
+
 function requireLogin(req, res, next) {
 	if (!req.session.user) {
 		cl('Login Required');
