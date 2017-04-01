@@ -48,7 +48,7 @@ app.get('/data/:objType', function (req, res) {
 app.get('/data/:objType/:id', function (req, res) {
 	cl("GET for single " + req.params.objType);
 	const objs = getObjList(req.params.objType);
-	const obj = objs.filter(obj => obj._id === +req.params.id)[0];
+	const obj = objs.find(obj => obj._id == req.params.id);
 	res.json(obj);
 });
 
@@ -110,6 +110,7 @@ app.listen(3003, function () {
 function cl(...params) {
 	console.log.apply(console, params);
 }
+
 function findIndexForId(objs, id) {
 	for (var i = 0; i < objs.length; i++) {
 		if (objs[i]._id == id ) return i;

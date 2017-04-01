@@ -185,12 +185,13 @@ app.post('/login', function (req, res) {
 		db.collection('user').findOne({ username: req.body.username, pass: req.body.pass }, function (err, user) {
 			if (user) {
 				cl('Login Succesful');
+                delete user.pass;
 				req.session.user = user;  //refresh the session value
-				res.end('Login Succesful');
+				res.json({token: 'Beareloginr: puk115th@b@5t', user});
 			} else {
 				cl('Login NOT Succesful');
 				req.session.user = null;
-				res.end('Login NOT Succesful');
+				res.json(403, { error: 'Login failed' })
 			}
 		});
 	});
@@ -200,6 +201,7 @@ app.get('/logout', function (req, res) {
 	req.session.reset();
 	res.end('Loggedout');
 });
+
 function requireLogin(req, res, next) {
 	if (!req.session.user) {
 		cl('Login Required');
