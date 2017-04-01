@@ -1,32 +1,25 @@
 [
-    {
-        "id":1,
-        "name":"Monsti",
-        "power":5,
-        "miles":98167,
-        "birthdate" : 1304375948024,
-        "enemies":[
-            {"name":"Charli", "type":"Cat"},
-            {"name":"Marli", "type":"Alien"},
-            {"name":"Bharli", "type":"Alien"}
-        ]
-    },
-    {
-        "id":2,
-        "name":"Putsi",
-        "power":5,
-        "miles":1111,
-        "birthdate" : 1304375948011,
-        "enemies":[
-        ]
-    },
-    {
-        "id":3,
-        "name":"Bobo",
-        "power":4,
-        "miles":1111,
-        "birthdate" : 1304375948011,
-        "enemies":[
-        ]
-    }
+  {
+    "name": "Daniel",
+    "power": "3",
+    "imgUrl": "http://localhost:3003/file-1491082393825.jpg",
+    "_id": 1
+  },
+  {
+    "name": "Yaron",
+    "power": "5",
+    "imgUrl": "http://localhost:3003/file-1491082403447.jpg",
+    "_id": 2
+  },
+  {
+    "name": "Zohar",
+    "power": 4,
+    "imgUrl": "http://localhost:3003/file-1491082421545.JPG"
+  },
+  {
+    "name": "Roni",
+    "power": "3",
+    "imgUrl": "http://localhost:3003/file-1491082487832.jpg",
+    "_id": 3
+  }
 ]

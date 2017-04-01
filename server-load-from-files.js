@@ -4,9 +4,9 @@
 "use strict";
 const express = require('express'),
 	bodyParser = require('body-parser'),
-	cors = require('cors');
-
-
+	cors = require('cors'),
+	upload = require('./uploads');
+const serverRoot = 'http://localhost:3003/';
 // Main Cache object, entities are lazily loaded and saved here for in memory CRUD
 const cache = {};
 function getObjList(objType) {
@@ -33,6 +33,7 @@ var corsOptions = {
 
 
 const app = express();
+app.use(express.static('uploads'));
 app.use(cors(corsOptions));
 app.use(bodyParser.json());
 
@@ -53,6 +54,7 @@ app.get('/data/:objType/:id', function (req, res) {
 
 // DELETE
 app.delete('/data/:objType/:id', function (req, res) {
+	cl("DELETE for single " + req.params.objType);
 	const objs = getObjList(req.params.objType);
 	let idx = findIndexForId(objs, +req.params.id);
 	if (idx !== -1) {
@@ -62,10 +64,14 @@ app.delete('/data/:objType/:id', function (req, res) {
 });
 
 // POST - adds 
-app.post('/data/:objType', function (req, res) {
+
+app.post('/data/:objType', upload.single('file'), function (req, res) {
 	cl("POST for " + req.params.objType);
 	const objs = getObjList(req.params.objType);
 	let obj = req.body;
+	if (req.file) {
+		obj.imgUrl = serverRoot + req.file.filename;
+	}
 	obj._id = findNextId(objs);
 	objs.push(obj);
 	res.json(obj);
@@ -83,7 +89,7 @@ app.put('/data/:objType/:id', function (req, res) {
 		success = true;
 	}
 	if (success) res.json(newObj);
-	else res.json(404, {error: 'not found'})
+	else res.json(404, { error: 'not found' })
 });
 
 
@@ -106,7 +112,7 @@ function cl(...params) {
 }
 function findIndexForId(objs, id) {
 	for (var i = 0; i < objs.length; i++) {
-		if (objs[i]._id == id) return i;
+		if (objs[i]._id == id ) return i;
 	}
 	return -1;
 }
