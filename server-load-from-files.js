@@ -9,6 +9,8 @@ const express = require('express'),
 const serverRoot = 'http://localhost:3003/';
 // Main Cache object, entities are lazily loaded and saved here for in memory CRUD
 const cache = {};
+
+
 function getObjList(objType) {
 	if (!/^[a-zA-Z0-9]+$/g.test(objType)) {
 		cl('Invalid Entitiy name');
@@ -56,7 +58,7 @@ app.get('/data/:objType/:id', function (req, res) {
 app.delete('/data/:objType/:id', function (req, res) {
 	cl("DELETE for single " + req.params.objType);
 	const objs = getObjList(req.params.objType);
-	let idx = findIndexForId(objs, +req.params.id);
+	let idx = findIndexForId(objs, req.params.id);
 	if (idx !== -1) {
 		objs.splice(idx, 1);
 	}
@@ -83,7 +85,7 @@ app.put('/data/:objType/:id', function (req, res) {
 	const objs = getObjList(req.params.objType);
 	const newObj = req.body;
 	let success = false;
-	let idx = findIndexForId(objs, +req.params.id);
+	let idx = findIndexForId(objs, req.params.id);
 	if (idx !== -1) {
 		objs[idx] = newObj;
 		success = true;
@@ -118,10 +120,21 @@ function findIndexForId(objs, id) {
 	return -1;
 }
 
-function findNextId(objs) {
-	var nextId = 0;
-	for (var i = 0; i < objs.length; i++) {
-		if (objs[i]._id > nextId) nextId = objs[i]._id;
-	}
-	return nextId + 1;
+// function findNextId(objs) {
+// 	var nextId = 0;
+// 	for (var i = 0; i < objs.length; i++) {
+// 		if (objs[i]._id > nextId) nextId = objs[i]._id;
+// 	}
+// 	return nextId + 1;
+// }
+
+function findNextId()
+{
+    var text = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    for( var i=0; i < 5; i++ )
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+    return text;
 }
