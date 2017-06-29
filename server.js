@@ -11,7 +11,7 @@ if (nodeMajor < 4) {
 }
 var prompt = require('prompt');
 console.info('Welcome to Misterbit Simple REST Server!');
-console.info('Notice: Only Mongo based server also has websocket support');
+// console.info('Notice: Only Mongo based server also has websocket support');
 var schema = {
 	properties: {
 		engine: {

@@ -6,6 +6,8 @@ const express = require('express'),
 	bodyParser = require('body-parser'),
 	cors = require('cors'),
 	upload = require('./uploads');
+
+
 const serverRoot = 'http://localhost:3003/';
 // Main Cache object, entities are lazily loaded and saved here for in memory CRUD
 const cache = {};
@@ -38,6 +40,10 @@ const app = express();
 app.use(express.static('uploads'));
 app.use(cors(corsOptions));
 app.use(bodyParser.json());
+
+
+const http = require('http').Server(app);
+const io = require('socket.io')(http);
 
 // GETs a list
 app.get('/data/:objType', function (req, res) {
@@ -97,7 +103,7 @@ app.put('/data/:objType/:id', function (req, res) {
 
 // Kickup our server 
 const baseUrl = 'http://localhost:3003/data';
-app.listen(3003, function () {
+app.listen(3000, function () {
 	console.log(`misterREST server is ready at ${baseUrl}`);
 	console.log(`GET (list): \t\t ${baseUrl}/{entity}`);
 	console.log(`GET (single): \t\t ${baseUrl}/{entity}/{id}`);
@@ -138,3 +144,14 @@ function findNextId()
 
     return text;
 }
+
+io.on('connection', function (socket) {
+	console.log('a user connected');
+	socket.on('disconnect', function () {
+		console.log('user disconnected');
+	});
+	socket.on('chat message', function (msg) {
+		// console.log('message: ' + msg);
+		io.emit('chat message', msg);
+	});
+});
