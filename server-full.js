@@ -4,6 +4,9 @@
 // Author: Yaron Biton misterBIT.co.il
 
 "use strict";
+
+var cl = console.log;
+
 const express = require('express'),
 	bodyParser = require('body-parser'),
 	cors = require('cors'),
@@ -95,18 +98,21 @@ app.get('/data/:objType/:id', function (req, res) {
 				.then((obj) => {
 					cl("Returning a single" + objType);
 					res.json(obj);
+					db.close();	
 				})
 				.catch(err => {
 					cl('Cannot get you that ', err)
 					res.json(404, { error: 'not found' })
+					db.close();	
 				})
+
 		});
 });
 
 // DELETE
 app.delete('/data/:objType/:id', function (req, res) {
-	const objType = req.params.objType;
-	const objId = req.params.id;
+	const objType 	= req.params.objType;
+	const objId 	= req.params.id;
 	cl(`Requested to DELETE the ${objType} with id: ${objId}`);
 	dbConnect().then((db) => {
 		const collection = db.collection(objType);
@@ -151,8 +157,8 @@ app.post('/data/:objType', upload.single('file'), function (req, res) {
 			} else {
 				cl(objType + " added");
 				res.json(obj);
-				db.close();
 			}
+			db.close();
 		});
 	});
 
@@ -160,9 +166,9 @@ app.post('/data/:objType', upload.single('file'), function (req, res) {
 
 // PUT - updates
 app.put('/data/:objType/:id', function (req, res) {
-	const objType = req.params.objType;
-	const objId = req.params.id;
-	const newObj = req.body;
+	const objType 	= req.params.objType;
+	const objId 	= req.params.id;
+	const newObj 	= req.body;
 	if (newObj._id && typeof newObj._id === 'string') newObj._id = new mongodb.ObjectID(newObj._id);
 
 	cl(`Requested to UPDATE the ${objType} with id: ${objId}`);
@@ -187,9 +193,9 @@ app.post('/login', function (req, res) {
 		db.collection('user').findOne({ username: req.body.username, pass: req.body.pass }, function (err, user) {
 			if (user) {
 				cl('Login Succesful');
-                delete user.pass;
+				delete user.pass;
 				req.session.user = user;  //refresh the session value
-				res.json({token: 'Beareloginr: puk115th@b@5t', user});
+				res.json({ token: 'Beareloginr: puk115th@b@5t', user });
 			} else {
 				cl('Login NOT Succesful');
 				req.session.user = null;
@@ -245,9 +251,13 @@ io.on('connection', function (socket) {
 cl('WebSocket is Ready');
 
 // Some small time utility functions
-function cl(...params) {
-	console.log.apply(console, params);
-}
+
+
+
+
+// function cl(...params) {
+// 	console.log.apply(console, params);
+// }
 
 // Just for basic testing the socket
 // app.get('/', function(req, res){
