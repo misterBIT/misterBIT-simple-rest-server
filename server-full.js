@@ -24,7 +24,6 @@ var corsOptions = {
 const serverRoot = 'http://localhost:3003/';
 const baseUrl = serverRoot + 'data';
 
-
 app.use(express.static('uploads'));
 
 
@@ -194,7 +193,7 @@ app.post('/login', function (req, res) {
 			if (user) {
 				cl('Login Succesful');
 				delete user.pass;
-				req.session.user = user;  //refresh the session value
+				req.session.user = user;  
 				res.json({ token: 'Beareloginr: puk115th@b@5t', user });
 			} else {
 				cl('Login NOT Succesful');
@@ -217,7 +216,8 @@ function requireLogin(req, res, next) {
 	} else {
 		next();
 	}
-};
+}
+
 app.get('/protected', requireLogin, function (req, res) {
 	res.end('User is loggedin, return some data');
 });
@@ -242,9 +242,9 @@ io.on('connection', function (socket) {
 	socket.on('disconnect', function () {
 		console.log('user disconnected');
 	});
-	socket.on('chat message', function (msg) {
+	socket.on('chat msg', function (msg) {
 		// console.log('message: ' + msg);
-		io.emit('chat message', msg);
+		io.emit('chat newMsg', msg);
 	});
 });
 
