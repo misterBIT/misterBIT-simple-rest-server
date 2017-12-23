@@ -3,7 +3,7 @@
 // Plus support for file upload
 // Author: Yaron Biton misterBIT.co.il
 
-"use strict";
+'use strict';
 
 var cl = console.log;
 
@@ -12,9 +12,12 @@ const express = require('express'),
 	cors = require('cors'),
 	mongodb = require('mongodb')
 
-const clientSessions = require("client-sessions");
+const clientSessions = require('client-sessions');
 const upload = require('./uploads');
 const app = express();
+
+const addRoutes = require('./routes');
+addRoutes(app);
 
 var corsOptions = {
 	origin: /http:\/\/localhost:\d+/,
@@ -52,25 +55,48 @@ function dbConnect() {
 				reject(err);
 			}
 			else {
-				//cl("Connected to DB");
+				//cl('Connected to DB');
 				resolve(db);
 			}
 		});
 	});
 }
 
+var objTypeRequiresUser = {
+	todo: true
+}
+// This function is called by all REST end-points to take care
+// setting the basic mongo query:
+// 1. _id if needed
+// 2. userId when needed
+function getBasicQueryObj(req) {
+	const objType 	= req.params.objType;
+	const objId 	= req.params.id;
+	var query = {};
+	
+	if (objId) {
+		try { query._id = new mongodb.ObjectID(objId);}
+		catch(e) {return query}
+	}
+	if (!objTypeRequiresUser[objType]) return query;
+	query.userId = null;
+	if ( req.session.user ) query.userId = req.session.user._id
+	return query;
+}
+
 // GETs a list
 app.get('/data/:objType', function (req, res) {
 	const objType = req.params.objType;
+	var query = getBasicQueryObj(req);
 	dbConnect().then(db => {
 		const collection = db.collection(objType);
 
-		collection.find({}).toArray((err, objs) => {
+		collection.find(query).toArray((err, objs) => {
 			if (err) {
 				cl('Cannot get you a list of ', err)
 				res.json(404, { error: 'not found' })
 			} else {
-				cl("Returning list of " + objs.length + " " + objType + "s");
+				cl('Returning list of ' + objs.length + ' ' + objType + 's');
 				res.json(objs);
 			}
 			db.close();
@@ -83,19 +109,14 @@ app.get('/data/:objType/:id', function (req, res) {
 	const objType = req.params.objType;
 	const objId = req.params.id;
 	cl(`Getting you an ${objType} with id: ${objId}`);
+	var query = getBasicQueryObj(req)
 	dbConnect()
-		.then((db) => {
+		.then(db=> {
 			const collection = db.collection(objType);
-			let _id;
-			try {
-				_id = new mongodb.ObjectID(objId);
-			}
-			catch (e) {
-				return Promise.reject(e);
-			}
-			return collection.findOne({ _id: _id })
-				.then((obj) => {
-					cl("Returning a single" + objType);
+			
+			return collection.findOne(query)
+				.then(obj => {
+					cl('Returning a single ' + objType);
 					res.json(obj);
 					db.close();	
 				})
@@ -113,22 +134,22 @@ app.delete('/data/:objType/:id', function (req, res) {
 	const objType 	= req.params.objType;
 	const objId 	= req.params.id;
 	cl(`Requested to DELETE the ${objType} with id: ${objId}`);
+	var query = getBasicQueryObj(req);
+	
 	dbConnect().then((db) => {
 		const collection = db.collection(objType);
-		collection.deleteOne({ _id: new mongodb.ObjectID(objId) }, (err, result) => {
+		collection.deleteOne(query, (err, result) => {
 			if (err) {
 				cl('Cannot Delete', err)
 				res.json(500, { error: 'Delete failed' })
 			} else {
-				cl("Deleted", result);
-				res.json({});
+				if (result.deletedCount)	res.json({});
+				else res.json(403, { error: 'Cannot delete' }) 
 			}
 			db.close();
 		});
 
 	});
-
-
 });
 
 // POST - adds 
@@ -137,14 +158,24 @@ app.post('/data/:objType', upload.single('file'), function (req, res) {
 	// console.log('req.body', req.body);
 
 	const objType = req.params.objType;
-	cl("POST for " + objType);
+	cl('POST for ' + objType);
 
 	const obj = req.body;
 	delete obj._id;
+	if (objTypeRequiresUser[objType]){
+		if (req.session.user) {
+			obj.userId = req.session.user._id;
+		} else {
+			res.json(403, { error: 'Please Login first' })
+			return;
+		}
+	} 
 	// If there is a file upload, add the url to the obj
-	if (req.file) {
-		obj.imgUrl = serverRoot + req.file.filename;
-	}
+	// if (req.file) {
+	// 	obj.imgUrl = serverRoot + req.file.filename;
+	// }
+
+
 
 	dbConnect().then((db) => {
 		const collection = db.collection(objType);
@@ -154,7 +185,7 @@ app.post('/data/:objType', upload.single('file'), function (req, res) {
 				cl(`Couldnt insert a new ${objType}`, err)
 				res.json(500, { error: 'Failed to add' })
 			} else {
-				cl(objType + " added");
+				cl(objType + ' added');
 				res.json(obj);
 			}
 			db.close();
@@ -168,18 +199,20 @@ app.put('/data/:objType/:id', function (req, res) {
 	const objType 	= req.params.objType;
 	const objId 	= req.params.id;
 	const newObj 	= req.body;
-	if (newObj._id && typeof newObj._id === 'string') newObj._id = new mongodb.ObjectID(newObj._id);
 
 	cl(`Requested to UPDATE the ${objType} with id: ${objId}`);
+	var query = getBasicQueryObj(req)
+	
 	dbConnect().then((db) => {
 		const collection = db.collection(objType);
-		collection.updateOne({ _id: new mongodb.ObjectID(objId) }, newObj,
+		collection.updateOne(query, newObj,
 			(err, result) => {
 				if (err) {
 					cl('Cannot Update', err)
 					res.json(500, { error: 'Update failed' })
 				} else {
-					res.json(newObj);
+					if (result.modifiedCount) res.json(newObj);
+					else res.json(403, { error: 'Cannot update' })
 				}
 				db.close();
 			});
@@ -249,17 +282,3 @@ io.on('connection', function (socket) {
 });
 
 cl('WebSocket is Ready');
-
-// Some small time utility functions
-
-
-
-
-// function cl(...params) {
-// 	console.log.apply(console, params);
-// }
-
-// Just for basic testing the socket
-// app.get('/', function(req, res){
-//   res.sendFile(__dirname + '/test-socket.html');
-// });
