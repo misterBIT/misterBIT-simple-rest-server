@@ -27,7 +27,7 @@ var corsOptions = {
 const serverRoot = 'http://localhost:3003/';
 const baseUrl = serverRoot + 'data';
 
-app.use(express.static('uploads'));
+// app.use(express.static('uploads'));
 
 
 app.use(cors(corsOptions));

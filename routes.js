@@ -1,13 +1,12 @@
-// Place for placing custom routes that are not covered by the generiWc API
-
-console.log(__dirname);
+// Place for custom routes that are
+// not covered by the generic API
 
 module.exports = (app) => {
 
     // Just for basic testing the socket
     app.get('/', function(req, res){
         // res.end(__dirname);
-    res.sendFile(__dirname + '/test-socket.html');
+        res.sendFile(__dirname + '/test-socket.html');
     });
 
 }
